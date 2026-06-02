@@ -24,22 +24,20 @@ void dgemm(size_t n, double *A, double *B, double *C)
 
 int main()
 {
-
-
     FILE *arquivo = fopen("resultados.txt", "a");
 
-if (arquivo == NULL) {
-    fprintf(stderr, "Erro ao abrir resultados.txt\n");
-    return 1;
-}
+    if (arquivo == NULL) {
+        fprintf(stderr, "Erro ao abrir resultados.txt\n");
+        return 1;
+    }
 
-    // Espaço e cabeçalho da execução
+    // Espaço e cabeçalho da execução no arquivo (mantido idêntico)
     fprintf(arquivo, "\n\n");
     fprintf(arquivo, "===== DGEMM_CAP3 =====\n");
     fprintf(arquivo, "%-15s %-15s\n", "Tamanho (N)", "Tempo (s)");
     fprintf(arquivo, "---------------------------------\n");
 
-    // Cabeçalho dos resultados
+    // Cabeçalho dos resultados no console
     printf("%-15s %-15s\n", "Tamanho (N)", "Tempo (s)");
     printf("---------------------------------\n");
 
@@ -55,26 +53,37 @@ if (arquivo == NULL) {
         if (A == NULL || B == NULL || C == NULL)
         {
             fprintf(stderr, "Erro ao alocar memória para N = %d\n", n);
+            if (A) free(A);
+            if (B) free(B);
+            if (C) free(C);
             break;
         }
 
-        for (int i = 0; i < n * n; i++)
+        double tempo_total = 0.0;
+        int repeticoes = 10;
+
+        for (int rep = 0; rep < repeticoes; rep++)
         {
-            A[i] = 1.0;
-            B[i] = 1.0;
-            C[i] = 0.0;
+            // Garante dados limpos e C zerada antes de CADA uma das 10 corridas
+            for (int i = 0; i < n * n; i++)
+            {
+                A[i] = 1.0;
+                B[i] = 1.0;
+                C[i] = 0.0;
+            }
+
+            clock_t start = clock();
+            dgemm(n, A, B, C);
+            clock_t end = clock();
+
+            tempo_total += (double)(end - start) / CLOCKS_PER_SEC;
         }
 
-        clock_t start = clock();
+        double tempo_medio = tempo_total / repeticoes;
 
-        dgemm(n, A, B, C);
-
-        clock_t end = clock();
-
-        double elapsed = (double)(end - start) / CLOCKS_PER_SEC;
-
-        printf("%-15d %-15.6f\n", n, elapsed);
-        fprintf(arquivo, "%-15d %-15.6f\n", n, elapsed);
+        // Imprime e grava o tempo médio mantendo a formatação antiga %-15.6f
+        printf("%-15d %-15.6f\n", n, tempo_medio);
+        fprintf(arquivo, "%-15d %-15.6f\n", n, tempo_medio);
 
         free(A);
         free(B);
